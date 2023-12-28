@@ -20,35 +20,37 @@ pipeline {
             }
         }
 
- stage('Deploy') {
-    steps {
-        script {
-            sh """
-                aws elasticbeanstalk create-application-version \
-                    --application-name "${ApplicationName}" \
-                    --version-label "${BuildName}" \
-                    --description "Build created from JENKINS. Job:${JOB_NAME}, BuildId:${BUILD_DISPLAY_NAME}, GitCommit:${GIT_COMMIT}, GitBranch:${GIT_BRANCH}" \
-                    --source-bundle S3Bucket=${BucketName},S3Key=${BuildName}.zip \
-                    --region us-east-1
+        stage('Deploy') {
+            steps {
+                script {
+                    sh """
+                        aws elasticbeanstalk create-application-version \
+                            --application-name "${ApplicationName}" \
+                            --version-label "${BuildName}" \
+                            --description "Build created from JENKINS. Job:${JOB_NAME}, BuildId:${BUILD_DISPLAY_NAME}, GitCommit:${GIT_COMMIT}, GitBranch:${GIT_BRANCH}" \
+                            --source-bundle S3Bucket=${BucketName},S3Key=${BuildName}.zip \
+                            --region us-east-1
 
-                aws elasticbeanstalk update-environment \
-                    --environment-name "${EnvironmentName}" \
-                    --version-label "${BuildName}" \
-                    --region us-east-1
-            """
+                        aws elasticbeanstalk update-environment \
+                            --environment-name "${EnvironmentName}" \
+                            --version-label "${BuildName}" \
+                            --region us-east-1
+                    """
 
-            // Debug: List versions
-            sh "aws s3api list-object-versions --bucket ${BucketName} --prefix ${BuildName}.zip --region us-east-1"
+                    // Debug: List versions
+                    def versionsOutput = sh(script: "aws s3api list-object-versions --bucket ${BucketName} --prefix ${BuildName}.zip --region ap-south-1", returnStdout: true).trim()
+                    echo "Versions Output: ${versionsOutput}"
 
-            // Delete older versions
-            sh """
-                aws s3api list-object-versions --bucket ${BucketName} --prefix ${BuildName}.zip --region ap-south-1 |
-                jq -r '.Versions[:-${MaxVersionsToKeep}] | .[] | "DeleteMarker=\\(.DeleteMarker) Key=\\(.Key) VersionId=\\(.VersionId)"' |
-                xargs -I {} aws s3api delete-object --bucket ${BucketName} --region us-east-1 {}
-            """
+                    // Delete older versions
+                    def deleteCommand = """
+                        aws s3api list-object-versions --bucket ${BucketName} --prefix ${BuildName}.zip --region ap-south-1 |
+                        jq -r '.Versions[:-${MaxVersionsToKeep}] | .[] | "DeleteMarker=\\(.DeleteMarker) Key=\\(.Key) VersionId=\\(.VersionId)"' |
+                        xargs -I {} echo aws s3api delete-object --bucket ${BucketName} --region us-east-1 {}
+                    """
+                    echo "Delete Command: ${deleteCommand}"
+                    sh deleteCommand
+                }
+            }
         }
-    }
-}
-
     }
 }
