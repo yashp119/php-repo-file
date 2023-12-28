@@ -12,9 +12,21 @@ pipeline {
         stage('Build') {
             steps {
                 script {
-                    sh "zip -j ${BuildName}.zip ${env.WORKSPACE}/index.php"
-                    sh "aws s3 cp ${BuildName}.zip s3://${BucketName} --region us-east-1"
-                    sh "rm ${BuildName}.zip"
+                    // Create a temporary directory to copy files to
+                    def tempDir = "${env.WORKSPACE}/temp"
+                    sh "mkdir -p ${tempDir}"
+
+                    // Copy all files to the temporary directory
+                    sh "cp -r ${env.WORKSPACE}/* ${tempDir}"
+
+                    // Zip all files from the temporary directory
+                    sh "cd ${tempDir} && zip -r ${BuildName}.zip ."
+
+                    // Upload the zip file to S3
+                    sh "aws s3 cp ${tempDir}/${BuildName}.zip s3://${BucketName} --region us-east-1"
+
+                    // Remove the temporary directory
+                    sh "rm -rf ${tempDir}"
                 }
             }
         }
@@ -35,27 +47,6 @@ pipeline {
                             --version-label "${BuildName}" \
                             --region us-east-1
                     """
-                }
-            }
-        }
-
-        stage('Cleanup') {
-            steps {
-                script {
-                    // Specify the number of versions to keep
-                    def versionsToKeep = 2
-
-                    // Get the list of application versions
-                    def versions = sh(script: "aws elasticbeanstalk describe-application-versions --application-name ${ApplicationName} --region us-east-1 --query 'ApplicationVersions[*].VersionLabel' --output text", returnStdout: true).trim().split()
-
-                    // Sort versions in descending order
-                    versions.sort { a, b -> b.compareTo(a) }
-
-                    // Remove excess versions and corresponding artifacts from S3
-                    for (int i = versionsToKeep; i < versions.size(); i++) {
-                        sh "aws elasticbeanstalk delete-application-version --application-name ${ApplicationName} --version-label ${versions[i]} --region us-east-1"
-                        sh "aws s3 rm s3://${BucketName}/${versions[i]}.zip --region us-east-1"
-                    }
                 }
             }
         }
