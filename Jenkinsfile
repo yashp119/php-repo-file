@@ -12,15 +12,12 @@ pipeline {
         stage('Build') {
             steps {
                 script {
-                    // Create a temporary directory to copy files to
+                    // Create a temporary directory to store the archive
                     def tempDir = "${env.WORKSPACE}/temp"
                     sh "mkdir -p ${tempDir}"
 
-                    // Copy all files to the temporary directory
-                    sh "cp -r ${env.WORKSPACE}/* ${tempDir}"
-
-                    // Zip all files from the temporary directory
-                    sh "cd ${tempDir} && zip -r ${BuildName}.zip ."
+                    // Use git archive to create a zip file from the Git repository
+                    sh "git archive --format=zip --output=${tempDir}/${BuildName}.zip HEAD"
 
                     // Upload the zip file to S3
                     sh "aws s3 cp ${tempDir}/${BuildName}.zip s3://${BucketName} --region us-east-1"
