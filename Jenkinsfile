@@ -2,46 +2,40 @@ pipeline {
     agent any
 
     environment {
-        AWS_ACCESS_KEY_ID     = credentials('aws-access-key-id')
-        AWS_SECRET_ACCESS_KEY = credentials('aws-secret-access-key')
-        Region                = 'us-east-1'
-        BucketName            = 'php-bucket11'
-        BuildName             = "version-${BUILD_NUMBER}"
+        BuildName = "version-${BUILD_NUMBER}"
+        BucketName = "php-bucket11"
+        ApplicationName = "php-testing-app"
+        EnvironmentName = "Php-testing-app-env"
     }
 
     stages {
-        stage('Checkout') {
-            steps {
-                checkout scm
-            }
-        }
-
-        stage('Upload to S3') {
+        stage('Build') {
             steps {
                 script {
-                    def S3BucketPath = "" // Empty string for the root of the bucket
-                    def ZipFileName = "${BuildName}.zip"
-                    echo "Uploading ${ZipFileName} to S3 bucket: ${BucketName} path: ${S3BucketPath}/${ZipFileName}"
-                    
-                    // Check if the file exists before uploading
-                    if (fileExists(ZipFileName)) {
-                        sh "aws s3 cp ${ZipFileName} s3://${BucketName}/${S3BucketPath}/${ZipFileName} --region ${Region}"
-                    } else {
-                        error "The file ${ZipFileName} does not exist. Make sure the file is generated or provide the correct filename."
-                    }
+                    sh "zip -j ${BuildName}.zip ${env.WORKSPACE}/index.php"
+                    sh "aws s3 cp ${BuildName}.zip s3://${BucketName} --region ap-south-1"
+                    sh "rm ${BuildName}.zip"
                 }
             }
         }
 
-        stage('Create Beanstalk Application Version') {
+        stage('Deploy') {
             steps {
-                // Your steps for creating Beanstalk Application Version
-            }
-        }
+                script {
+                    sh """
+                        aws elasticbeanstalk create-application-version \
+                            --application-name "${ApplicationName}" \
+                            --version-label "${BuildName}" \
+                            --description "Build created from JENKINS. Job:${JOB_NAME}, BuildId:${BUILD_DISPLAY_NAME}, GitCommit:${GIT_COMMIT}, GitBranch:${GIT_BRANCH}" \
+                            --source-bundle S3Bucket=${BucketName},S3Key=${BuildName}.zip \
+                            --region ap-south-1
 
-        stage('Update Beanstalk Environment') {
-            steps {
-                // Your steps for updating Beanstalk Environment
+                        aws elasticbeanstalk update-environment \
+                            --environment-name "${EnvironmentName}" \
+                            --version-label "${BuildName}" \
+                            --region ap-south-1
+                    """
+                }
             }
         }
     }
