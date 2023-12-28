@@ -5,8 +5,8 @@ pipeline {
         BuildName = "version-${BUILD_NUMBER}"
         BucketName = "php-bucket11"
         ApplicationName = "php-testing-app"
-        EnvironmentName = "php-testing-app-env"
-        MaxVersionsToKeep = 1
+        EnvironmentName = "Php-testing-app-env"
+        MaxVersionsToKeep = 8
     }
 
     stages {
@@ -40,7 +40,7 @@ pipeline {
                     // Delete older versions
                     sh """
                         aws s3api list-object-versions --bucket ${BucketName} --prefix ${BuildName}.zip --region ap-south-1 |
-                        jq -r '.Versions[:-${MaxVersionsToKeep}] | .[] | "DeleteMarker=\(.DeleteMarker) Key=\(.Key) VersionId=\(.VersionId)"' |
+                        jq -r '.Versions[:-${MaxVersionsToKeep}] | .[] | "DeleteMarker=\\(.DeleteMarker) Key=\\(.Key) VersionId=\\(.VersionId)"' |
                         xargs -I {} aws s3api delete-object --bucket ${BucketName} --region us-east-1 {}
                     """
                 }
