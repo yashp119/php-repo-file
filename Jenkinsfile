@@ -6,7 +6,7 @@ pipeline {
         BucketName = "php-bucket11"
         ApplicationName = "php-testing-app"
         EnvironmentName = "Php-testing-app-env"
-        MaxVersionsToKeep = 8
+        MaxVersionsToKeep = 1
     }
 
     stages {
