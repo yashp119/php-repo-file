@@ -2,38 +2,26 @@ pipeline {
     agent any
 
     environment {
-        AWS_REGION = 'us-east-1'
-        AWS_S3_BUCKET = 'php-bucket11'
-        AWS_EB_APP_NAME = 'php-testing-app'
-        AWS_EB_ENVIRONMENT = 'Php-testing-app-env'
-        ARTIFACT_NAME = 'your-app.zip'
+        BuildName = "version-${BUILD_NUMBER}"
+        BucketName = "php-bucket11"
+        ApplicationName = "php-testing-app"
+        EnvironmentName = "Php-testing-app-env"
     }
 
     stages {
         stage('Checkout') {
             steps {
+                // Assuming you are using Git for version control
                 checkout scm
-            }
-        }
-
-        stage('Build and Package') {
-            steps {
-                script {
-                    // Assuming you have a PHP project with a composer.json file
-                    sh 'composer install'
-                    
-                    // Customize the packaging based on your PHP project structure
-                    sh 'zip -r $ARTIFACT_NAME .'
-                }
-                archiveArtifacts artifacts: "**/${ARTIFACT_NAME}", fingerprint: true
             }
         }
 
         stage('Upload to S3') {
             steps {
                 script {
-                    sh "aws configure set region ${AWS_REGION}"
-                    sh "aws s3 cp ./${ARTIFACT_NAME} s3://${AWS_S3_BUCKET}/${ARTIFACT_NAME}"
+                    def S3BucketPath = "" // Empty string for the root of the bucket
+                    // Upload the contents of the repository to the root of the S3 bucket
+                    sh "aws s3 sync . s3://${BucketName}/${S3BucketPath} --region us-east-1"
                 }
             }
         }
@@ -41,7 +29,7 @@ pipeline {
         stage('Create Beanstalk Application Version') {
             steps {
                 script {
-                    sh "aws elasticbeanstalk create-application-version --application-name ${AWS_EB_APP_NAME} --version-label ${BUILD_NUMBER} --description 'Build created from JENKINS. Job:${JOB_NAME}, BuildId:${BUILD_DISPLAY_NAME}, GitCommit:${GIT_COMMIT}, GitBranch:${GIT_BRANCH}' --source-bundle S3Bucket=${AWS_S3_BUCKET},S3Key=${ARTIFACT_NAME}"
+                    sh "aws elasticbeanstalk create-application-version --application-name '${ApplicationName}' --version-label '${BuildName}' --description 'Build created from JENKINS. Job:${JOB_NAME}, BuildId:${BUILD_DISPLAY_NAME}, GitCommit:${GIT_COMMIT}, GitBranch:${GIT_BRANCH}' --region us-east-1"
                 }
             }
         }
@@ -49,15 +37,9 @@ pipeline {
         stage('Update Beanstalk Environment') {
             steps {
                 script {
-                    sh "aws elasticbeanstalk update-environment --application-name ${AWS_EB_APP_NAME} --environment-name ${AWS_EB_ENVIRONMENT} --version-label ${BUILD_NUMBER}"
+                    sh "aws elasticbeanstalk update-environment --environment-name '${EnvironmentName}' --version-label '${BuildName}' --region us-east-1"
                 }
             }
-        }
-    }
-
-    post {
-        success {
-            // Additional actions on success
         }
     }
 }
