@@ -49,7 +49,7 @@ pipeline {
                     def versions = sh(script: "aws elasticbeanstalk describe-application-versions --application-name ${ApplicationName} --region us-east-1 --query 'ApplicationVersions[*].VersionLabel' --output text", returnStdout: true).trim().split()
 
                     // Sort versions in descending order
-                    versions.sort { it.compareToIgnoreCase(b) }
+                    versions.sort { a, b -> b.compareTo(a) }
 
                     // Remove excess versions
                     for (int i = versionsToKeep; i < versions.size(); i++) {
