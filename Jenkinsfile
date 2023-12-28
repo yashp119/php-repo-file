@@ -5,8 +5,7 @@ pipeline {
         BuildName = "version-${BUILD_NUMBER}"
         BucketName = "php-bucket11"
         ApplicationName = "php-testing-app"
-        EnvironmentName = "Php-testing-app-env"
-        MaxVersionsToKeep = 2
+        EnvironmentName = "php-testing-app-env"
     }
 
     stages {
@@ -20,31 +19,30 @@ pipeline {
             }
         }
 
-stage('Deploy') {
-    steps {
-        script {
-            sh """
-                aws elasticbeanstalk create-application-version \
-                    --application-name "${ApplicationName}" \
-                    --version-label "${BuildName}" \
-                    --description "Build created from JENKINS. Job:${JOB_NAME}, BuildId:${BUILD_DISPLAY_NAME}, GitCommit:${GIT_COMMIT}, GitBranch:${GIT_BRANCH}" \
-                    --source-bundle S3Bucket=${BucketName},S3Key=${BuildName}.zip \
-                    --region us-east-1
+        stage('Deploy') {
+            steps {
+                script {
+                    sh """
+                        aws elasticbeanstalk create-application-version \
+                            --application-name "${ApplicationName}" \
+                            --version-label "${BuildName}" \
+                            --description "Build created from JENKINS. Job:${JOB_NAME}, BuildId:${BUILD_DISPLAY_NAME}, GitCommit:${GIT_COMMIT}, GitBranch:${GIT_BRANCH}" \
+                            --source-bundle S3Bucket=${BucketName},S3Key=${BuildName}.zip \
+                            --region us-east-1
 
-                aws elasticbeanstalk update-environment \
-                    --environment-name "${EnvironmentName}" \
-                    --version-label "${BuildName}" \
-                    --region us-east-1
-            """
+                        aws elasticbeanstalk update-environment \
+                            --environment-name "${EnvironmentName}" \
+                            --version-label "${BuildName}" \
+                            --region us-east-1
+                    """
 
-            // Get the latest version
-            def latestVersion = sh(script: "aws s3api list-object-versions --bucket ${BucketName} --prefix ${BuildName}.zip --region ap-south-1 --max-items 1 | jq -r '.Versions[0].VersionId'", returnStdout: true).trim()
+                    // Get the latest version
+                    def latestVersion = sh(script: "aws s3api list-object-versions --bucket ${BucketName} --prefix ${BuildName}.zip --region ap-south-1 --max-items 1 | jq -r '.Versions[0].VersionId'", returnStdout: true).trim()
 
-            // Delete older versions
-            sh "aws s3api delete-object --bucket ${BucketName} --region ap-south-1 --prefix ${BuildName}.zip --key-marker ${BuildName}.zip --version-id-marker ${latestVersion}"
+                    // Delete older versions
+                    sh "aws s3api delete-object --bucket ${BucketName} --region ap-south-1 --prefix ${BuildName}.zip --key-marker ${BuildName}.zip --version-id-marker ${latestVersion}"
+                }
+            }
         }
-    }
-}
-
     }
 }
