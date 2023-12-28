@@ -16,12 +16,21 @@ pipeline {
             }
         }
 
+        stage('Package Code') {
+            steps {
+                script {
+                    // Create a ZIP file of the code
+                    sh "zip -r ${BuildName}.zip ."
+                }
+            }
+        }
+
         stage('Upload to S3') {
             steps {
                 script {
                     def S3BucketPath = "" // Empty string for the root of the bucket
-                    // Upload the contents of the repository to the root of the S3 bucket
-                    sh "aws s3 sync . s3://${BucketName}/${S3BucketPath} --region ${Region}"
+                    // Upload the ZIP file to the S3 bucket
+                    sh "aws s3 cp ${BuildName}.zip s3://${BucketName}/${S3BucketPath}/${BuildName}.zip --region ${Region}"
                 }
             }
         }
@@ -29,11 +38,8 @@ pipeline {
         stage('Create Beanstalk Application Version') {
             steps {
                 script {
-                    // Create an application version
-                    scriptResult = sh(script: "aws elasticbeanstalk create-application-version --application-name '${ApplicationName}' --version-label '${BuildName}' --description 'Build created from JENKINS. Job:${JOB_NAME}, BuildId:${BUILD_DISPLAY_NAME}, GitCommit:${GIT_COMMIT}, GitBranch:${GIT_BRANCH}' --region ${Region}", returnStatus: true)
-                    if (scriptResult != 0) {
-                        error "Failed to create Beanstalk application version"
-                    }
+                    // Create an application version using the ZIP file
+                    sh "aws elasticbeanstalk create-application-version --application-name '${ApplicationName}' --version-label '${BuildName}' --source-bundle S3Bucket=${BucketName},S3Key=${BuildName}.zip --region ${Region}"
                 }
             }
         }
@@ -42,10 +48,7 @@ pipeline {
             steps {
                 script {
                     // Deploy the application version to the Beanstalk environment
-                    scriptResult = sh(script: "aws elasticbeanstalk update-environment --environment-name '${EnvironmentName}' --version-label '${BuildName}' --region ${Region}", returnStatus: true)
-                    if (scriptResult != 0) {
-                        error "Failed to update Beanstalk environment"
-                    }
+                    sh "aws elasticbeanstalk update-environment --environment-name '${EnvironmentName}' --version-label '${BuildName}' --region ${Region}"
                 }
             }
         }
