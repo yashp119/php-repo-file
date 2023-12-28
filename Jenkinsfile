@@ -51,9 +51,10 @@ pipeline {
                     // Sort versions in descending order
                     versions.sort { a, b -> b.compareTo(a) }
 
-                    // Remove excess versions
+                    // Remove excess versions and corresponding artifacts from S3
                     for (int i = versionsToKeep; i < versions.size(); i++) {
                         sh "aws elasticbeanstalk delete-application-version --application-name ${ApplicationName} --version-label ${versions[i]} --region us-east-1"
+                        sh "aws s3 rm s3://${BucketName}/${versions[i]}.zip --region us-east-1"
                     }
                 }
             }
