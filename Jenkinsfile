@@ -16,20 +16,11 @@ pipeline {
             }
         }
 
-        stage('Package Code') {
-            steps {
-                script {
-                    // Create a ZIP file of the code
-                    sh "zip -r ${BuildName}.zip ."
-                }
-            }
-        }
-
         stage('Upload to S3') {
             steps {
                 script {
                     def S3BucketPath = "" // Empty string for the root of the bucket
-                    // Upload the ZIP file to the S3 bucket
+                    echo "Uploading ${BuildName}.zip to S3 bucket: ${BucketName} path: ${S3BucketPath}/${BuildName}.zip"
                     sh "aws s3 cp ${BuildName}.zip s3://${BucketName}/${S3BucketPath}/${BuildName}.zip --region ${Region}"
                 }
             }
@@ -38,16 +29,16 @@ pipeline {
         stage('Create Beanstalk Application Version') {
             steps {
                 script {
-                    // Create an application version using the ZIP file
-                    sh "aws elasticbeanstalk create-application-version --application-name '${ApplicationName}' --version-label '${BuildName}' --source-bundle S3Bucket=${BucketName},S3Key=${BuildName}.zip --region ${Region}"
+                    echo "Creating Beanstalk application version ${BuildName}"
+                    sh "aws elasticbeanstalk create-application-version --application-name '${ApplicationName}' --version-label '${BuildName}' --description 'Build created from JENKINS. Job:${JOB_NAME}, BuildId:${BUILD_DISPLAY_NAME}, GitCommit:${GIT_COMMIT}, GitBranch:${GIT_BRANCH}' --region ${Region}"
                 }
             }
         }
 
-        stage('Deploy to Beanstalk Environment') {
+        stage('Update Beanstalk Environment') {
             steps {
                 script {
-                    // Deploy the application version to the Beanstalk environment
+                    echo "Updating Beanstalk environment ${EnvironmentName} to version ${BuildName}"
                     sh "aws elasticbeanstalk update-environment --environment-name '${EnvironmentName}' --version-label '${BuildName}' --region ${Region}"
                 }
             }
