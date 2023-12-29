@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        BUILD_NAME = "Beanstalk-Code-Version-${BUILD_NUMBER}"
+        BUILD_NAME = "Beanstalk-Code-Version-${BUILD_ID}"
         BUCKET_NAME = "php-bucket11"
         ApplicationName = "personal-testing"
         EnvironmentName = "Personal-testing-env"
