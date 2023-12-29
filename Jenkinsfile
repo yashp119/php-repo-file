@@ -5,7 +5,7 @@ pipeline {
         BuildName = "version-${BUILD_NUMBER}"
         BucketName = "yashbucketdhhffh"
         ApplicationName = "personal-testing"
-        EnvironmentName = "personal-testing-env"
+        EnvironmentName = "Personal-testing-env"
     }
 
     stages {
