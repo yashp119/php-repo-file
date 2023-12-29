@@ -38,26 +38,5 @@ pipeline {
                 }
             }
         }
-
-        stage('Cleanup') {
-            steps {
-                script {
-                    // Specify the number of versions to keep
-                    def versionsToKeep = 2
-
-                    // Get the list of application versions
-                    def versions = sh(script: "aws elasticbeanstalk describe-application-versions --application-name ${ApplicationName} --region us-east-1 --query 'ApplicationVersions[*].VersionLabel' --output text", returnStdout: true).trim().split()
-
-                    // Sort versions in descending order
-                    versions.sort { a, b -> b.compareTo(a) }
-
-                    // Remove excess versions and corresponding artifacts from S3
-                    for (int i = versionsToKeep; i < versions.size(); i++) {
-                        sh "aws elasticbeanstalk delete-application-version --application-name ${ApplicationName} --version-label ${versions[i]} --region us-east-1"
-                        sh "aws s3 rm s3://${BucketName}/${versions[i]}.zip --region us-east-1"
-                    }
-                }
-            }
-        }
     }
 }
