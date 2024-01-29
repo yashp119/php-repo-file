@@ -46,30 +46,28 @@ jobs:
             "${{ secrets.SONAR_HOST_URL }}/api/issues/search?componentKeys=yash-testing-29jan&resolved=false" \
             -o sonarqube-issues.json
 
-      - name: Include Attachment
+      - name: Create MIME Message
         run: |
-          echo "--BOUNDARY
-          Content-Type: application/json
-          Content-Disposition: attachment; filename=sonarqube-issues.json
-          Content-Transfer-Encoding: base64
+          echo "Subject: SonarQube Report
+From: ${{ secrets.EMAIL_FROM }}
+To: ${{ secrets.EMAIL_TO_1 }}, ${{ secrets.EMAIL_TO_2 }}
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary=BOUNDARY
 
-          $(cat sonarqube-issues.json | base64)
-          --BOUNDARY--" > attachment.txt
+--BOUNDARY
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+
+Sonar-report
+
+--BOUNDARY
+Content-Type: application/json
+Content-Disposition: attachment; filename=sonarqube-issues.json
+Content-Transfer-Encoding: base64
+
+$(base64 sonarqube-issues.json)
+--BOUNDARY--" > email.txt
         shell: bash
 
       - name: Send SonarQube Report via Email
-        uses: dawidd6/action-send-mail@v2.0.0
-        with:
-          server_address: smtp.gmail.com
-          server_port: 587
-          username: ${{ secrets.EMAIL_USERNAME }}
-          password: ${{ secrets.EMAIL_PASSWORD }}
-          subject: SonarQube Report
-          body: |
-            Sonar-report
-
-          to: ${{ secrets.EMAIL_TO_1 }}, ${{ secrets.EMAIL_TO_2 }}
-          from: ${{ secrets.EMAIL_FROM }}
-          content_type: multipart/mixed; boundary="BOUNDARY"
-        env:
-          ATTACHMENT_CONTENT: $(cat attachment.txt)
+        run: cat email.txt | msmtp --debug -a default ${{ secrets.EMAIL_TO_1 }} ${{ secrets.EMAIL_TO_2 }}
