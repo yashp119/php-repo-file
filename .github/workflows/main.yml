@@ -54,8 +54,12 @@ jobs:
           username: ${{ secrets.EMAIL_USERNAME }}
           password: ${{ secrets.EMAIL_PASSWORD }}
           subject: SonarQube Report
-          body: Sonar-report
+          body: |
+            Sonar-report
+            Content-Type: application/json
+            Content-Disposition: attachment; filename=sonarqube-issues.json
+
+            $(cat sonarqube-issues.json)
           to: ${{ secrets.EMAIL_TO_1 }}, ${{ secrets.EMAIL_TO_2 }}
           from: ${{ secrets.EMAIL_FROM }}
-          attachments: sonarqube-issues.json
-          content_type: application/json
+          content_type: multipart/mixed; boundary="BOUNDARY"
