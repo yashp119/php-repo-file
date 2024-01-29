@@ -46,6 +46,17 @@ jobs:
             "${{ secrets.SONAR_HOST_URL }}/api/issues/search?componentKeys=yash-testing-29jan&resolved=false" \
             -o sonarqube-issues.json
 
+      - name: Include Attachment
+        run: |
+          echo "--BOUNDARY
+          Content-Type: application/json
+          Content-Disposition: attachment; filename=sonarqube-issues.json
+          Content-Transfer-Encoding: base64
+
+          $(cat sonarqube-issues.json | base64)
+          --BOUNDARY--" > attachment.txt
+        shell: bash
+
       - name: Send SonarQube Report via Email
         uses: dawidd6/action-send-mail@v2.0.0
         with:
@@ -56,11 +67,9 @@ jobs:
           subject: SonarQube Report
           body: |
             Sonar-report
-            Content-Type: application/json
-            Content-Disposition: attachment; filename=sonarqube-issues.json
-            Content-Transfer-Encoding: base64
 
-            $(cat sonarqube-issues.json | base64)
           to: ${{ secrets.EMAIL_TO_1 }}, ${{ secrets.EMAIL_TO_2 }}
           from: ${{ secrets.EMAIL_FROM }}
           content_type: multipart/mixed; boundary="BOUNDARY"
+        env:
+          ATTACHMENT_CONTENT: $(cat attachment.txt)
