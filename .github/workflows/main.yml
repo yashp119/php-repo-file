@@ -58,8 +58,9 @@ jobs:
             Sonar-report
             Content-Type: application/json
             Content-Disposition: attachment; filename=sonarqube-issues.json
+            Content-Transfer-Encoding: base64
 
-            $(cat sonarqube-issues.json)
+            $(base64 sonarqube-issues.json)
           to: ${{ secrets.EMAIL_TO_1 }}, ${{ secrets.EMAIL_TO_2 }}
           from: ${{ secrets.EMAIL_FROM }}
           content_type: multipart/mixed; boundary="BOUNDARY"
