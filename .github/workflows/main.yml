@@ -40,11 +40,17 @@ jobs:
         with:
           name: sonarqube-report
 
+      - name: Wait for SonarQube Analysis Completion
+        run: sleep 15s  # Adjust the sleep time based on your analysis duration
+
       - name: Fetch SonarQube Issues
         run: |
           curl -u "${{ secrets.SONAR_TOKEN }}:" \
             "${{ secrets.SONAR_HOST_URL }}/api/issues/search?componentKeys=sonar-testing-25-january&resolved=false" \
             -o sonarqube-issues.json
+
+      - name: Print SonarQube Issues
+        run: cat sonarqube-issues.json
 
       - name: Send SonarQube Report via Email
         uses: dawidd6/action-send-mail@v2
