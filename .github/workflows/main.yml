@@ -15,22 +15,11 @@ jobs:
         with:
           fetch-depth: 0  # Shallow clones should be disabled for better relevancy of analysis
 
-      - name: Wait for SonarQube to Start
-        run: sleep 30s  # Adjust the delay based on your SonarQube server's startup time
-
-      - name: Check SonarQube Server Status
-        run: curl -I ${{ secrets.SONAR_HOST_URL }}
-      
-      - name: Set up jq
-        run: sudo apt-get install jq -y
-
       - name: SonarQube Scan
-        run: |
-          latest_version=$(curl -s https://api.github.com/repos/SonarSource/sonarqube-scan-action/releases/latest | jq -r .tag_name)
-          echo "Latest version is $latest_version"
-          docker run --rm -e SONAR_TOKEN=${{ secrets.SONAR_TOKEN }} -e SONAR_HOST_URL=${{ secrets.SONAR_HOST_URL }} sonarsource/sonarqube-scan-action:${latest_version}
+        uses: sonarsource/sonarqube-scan-action@latest
         env:
-          DOCKER_CLI_AWS__VERSION: 1.18.4
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
       - name: Upload SonarQube Report
         uses: actions/upload-artifact@v2
@@ -54,7 +43,7 @@ jobs:
       - name: Fetch SonarQube Issues
         run: |
           curl -u "${{ secrets.SONAR_TOKEN }}:" \
-            "${{ secrets.SONAR_HOST_URL }}/api/issues/search?componentKeys=sonar-testing-25-january&resolved=false" \
+            "${{ secrets.SONAR_HOST_URL }}/api/issues/search?componentKeys=yash-testing-29jan&resolved=false" \
             -o sonarqube-issues.json
 
       - name: Send SonarQube Report via Email
