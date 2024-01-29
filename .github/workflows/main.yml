@@ -46,7 +46,7 @@ jobs:
             "${{ secrets.SONAR_HOST_URL }}/api/issues/search?componentKeys=yash-testing-29jan&resolved=false" \
             -o sonarqube-issues.json
 
-      - name: Create MIME Message
+      - name: Send SonarQube Report via Email
         run: |
           echo "Subject: SonarQube Report
 From: ${{ secrets.EMAIL_FROM }}
@@ -66,8 +66,4 @@ Content-Disposition: attachment; filename=sonarqube-issues.json
 Content-Transfer-Encoding: base64
 
 $(base64 sonarqube-issues.json)
---BOUNDARY--" > email.txt
-        shell: bash
-
-      - name: Send SonarQube Report via Email
-        run: cat email.txt | msmtp --debug -a default ${{ secrets.EMAIL_TO_1 }} ${{ secrets.EMAIL_TO_2 }}
+--BOUNDARY--" | mime-construct --to ${{ secrets.EMAIL_TO_1 }},${{ secrets.EMAIL_TO_2 }} --subject "SonarQube Report" --output - | msmtp --debug -a default
