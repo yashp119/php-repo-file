@@ -21,8 +21,15 @@ jobs:
       - name: Check SonarQube Server Status
         run: curl -I ${{ secrets.SONAR_HOST_URL }}
       
+      - name: Get latest SonarQube Scan Action version
+        id: get_version
+        run: |
+          latest_version=$(curl -s https://api.github.com/repos/SonarSource/sonarqube-scan-action/releases/latest | jq -r .tag_name)
+          echo "::set-output name=version::$latest_version"
+        shell: bash
+
       - name: SonarQube Scan
-        uses: sonarsource/sonarqube-scan-action@1.2.0  # Replace with the actual version
+        uses: sonarsource/sonarqube-scan-action@${{ steps.get_version.outputs.version }}
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
