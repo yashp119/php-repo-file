@@ -11,18 +11,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v2.5.2
         with:
           fetch-depth: 0  # Shallow clones should be disabled for better relevancy of analysis
 
       - name: SonarQube Scan
-        uses: sonarsource/sonarqube-scan-action@latest
+        uses: sonarsource/sonarqube-scan-action@master
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
       - name: Upload SonarQube Report
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v2.2.4
         with:
           name: sonarqube-report
           path: .scannerwork/report-task.txt
@@ -33,10 +33,10 @@ jobs:
     needs: build
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v2.5.2
 
       - name: Download SonarQube Report Artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v2.2.4
         with:
           name: sonarqube-report
 
@@ -47,7 +47,7 @@ jobs:
             -o sonarqube-issues.json
 
       - name: Send SonarQube Report via Email
-        uses: dawidd6/action-send-mail@v2
+        uses: dawidd6/action-send-mail@v2.0.0
         with:
           server_address: smtp.gmail.com
           server_port: 587
