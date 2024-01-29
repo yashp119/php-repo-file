@@ -21,19 +21,16 @@ jobs:
       - name: Check SonarQube Server Status
         run: curl -I ${{ secrets.SONAR_HOST_URL }}
       
-      - name: Get latest SonarQube Scan Action version
-        id: get_version
+      - name: Set up jq
+        run: sudo apt-get install jq -y
+
+      - name: SonarQube Scan
         run: |
           latest_version=$(curl -s https://api.github.com/repos/SonarSource/sonarqube-scan-action/releases/latest | jq -r .tag_name)
           echo "Latest version is $latest_version"
-          echo "::set-output name=version::$latest_version"
-        shell: bash
-
-      - name: SonarQube Scan
-        uses: sonarsource/sonarqube-scan-action@v${{ steps.get_version.outputs.version }}
+          docker run --rm -e SONAR_TOKEN=${{ secrets.SONAR_TOKEN }} -e SONAR_HOST_URL=${{ secrets.SONAR_HOST_URL }} sonarsource/sonarqube-scan-action:${latest_version}
         env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          DOCKER_CLI_AWS__VERSION: 1.18.4
 
       - name: Upload SonarQube Report
         uses: actions/upload-artifact@v2
