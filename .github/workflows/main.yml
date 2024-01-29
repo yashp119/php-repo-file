@@ -16,7 +16,7 @@ jobs:
           fetch-depth: 0  # Shallow clones should be disabled for better relevancy of analysis
 
       - name: SonarQube Scan
-        uses: sonarsource/sonarqube-scan-action@master
+        uses: sonarsource/sonarqube-scan-action@latest
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
@@ -43,27 +43,19 @@ jobs:
       - name: Fetch SonarQube Issues
         run: |
           curl -u "${{ secrets.SONAR_TOKEN }}:" \
-            "${{ secrets.SONAR_HOST_URL }}/api/issues/search?componentKeys=yash-testing-29jan&resolved=false" \
+            "${{ secrets.SONAR_HOST_URL }}/api/issues/search?componentKeys=sonar-testing-25-january&resolved=false" \
             -o sonarqube-issues.json
 
       - name: Send SonarQube Report via Email
-        run: |
-          echo "Subject: SonarQube Report
-From: ${{ secrets.EMAIL_FROM }}
-To: ${{ secrets.EMAIL_TO_1 }}, ${{ secrets.EMAIL_TO_2 }}
-MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary=BOUNDARY
-
---BOUNDARY
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-
-Sonar-report
-
---BOUNDARY
-Content-Type: application/json
-Content-Disposition: attachment; filename=sonarqube-issues.json
-Content-Transfer-Encoding: base64
-
-$(base64 sonarqube-issues.json)
---BOUNDARY--" | mime-construct --to ${{ secrets.EMAIL_TO_1 }},${{ secrets.EMAIL_TO_2 }} --subject "SonarQube Report" --output - | msmtp --debug -a default
+        uses: dawidd6/action-send-mail@v2
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          username: ${{ secrets.EMAIL_USERNAME }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          subject: SonarQube Report
+          body: Sonar-report
+          to: ${{ secrets.EMAIL_TO_1 }}, ${{ secrets.EMAIL_TO_2 }}
+          from: ${{ secrets.EMAIL_FROM }}
+          attachments: sonarqube-issues.json
+          content_type: application/json
