@@ -60,7 +60,7 @@ jobs:
             Content-Disposition: attachment; filename=sonarqube-issues.json
             Content-Transfer-Encoding: base64
 
-            $(base64 sonarqube-issues.json)
+            $(cat sonarqube-issues.json | base64)
           to: ${{ secrets.EMAIL_TO_1 }}, ${{ secrets.EMAIL_TO_2 }}
           from: ${{ secrets.EMAIL_FROM }}
           content_type: multipart/mixed; boundary="BOUNDARY"
