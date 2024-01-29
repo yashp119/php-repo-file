@@ -12,7 +12,7 @@
   <link href="demo_files/demo.css" rel="stylesheet" type="text/css" />
 
   <!-- For Syntax Highlighting. -->
-  <link href="demo_files/sh/shCore.css" rel="stylesheet" type="text/css" />
+  <link href="demo_files/sh/shCore.css" rel="stylddesheet" type="text/css" />
   <link href="demo_files/sh/shThemeMidnight.css" rel="stylesheet" type="text/css" />
 
 </head>
