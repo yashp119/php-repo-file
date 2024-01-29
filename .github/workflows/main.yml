@@ -25,11 +25,12 @@ jobs:
         id: get_version
         run: |
           latest_version=$(curl -s https://api.github.com/repos/SonarSource/sonarqube-scan-action/releases/latest | jq -r .tag_name)
+          echo "Latest version is $latest_version"
           echo "::set-output name=version::$latest_version"
         shell: bash
 
       - name: SonarQube Scan
-        uses: sonarsource/sonarqube-scan-action@${{ steps.get_version.outputs.version }}
+        uses: sonarsource/sonarqube-scan-action@v${{ steps.get_version.outputs.version }}
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
