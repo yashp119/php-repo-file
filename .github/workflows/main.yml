@@ -15,8 +15,14 @@ jobs:
         with:
           fetch-depth: 0  # Shallow clones should be disabled for better relevancy of analysis
 
+      - name: Wait for SonarQube to Start
+        run: sleep 10s  # Adjust the delay based on your SonarQube server's startup time
+
+      - name: Check SonarQube Server Status
+        run: curl -I ${{ secrets.SONAR_HOST_URL }}
+      
       - name: SonarQube Scan
-        uses: sonarsource/sonarqube-scan-action@v2
+        uses: sonarsource/sonarqube-scan-action@latest_version
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
@@ -40,17 +46,11 @@ jobs:
         with:
           name: sonarqube-report
 
-      - name: Wait for SonarQube Analysis Completion
-        run: sleep 60s  # Adjust the sleep time based on your analysis duration
-
       - name: Fetch SonarQube Issues
         run: |
-          curl -v -u "${{ secrets.SONAR_TOKEN }}:" \
+          curl -u "${{ secrets.SONAR_TOKEN }}:" \
             "${{ secrets.SONAR_HOST_URL }}/api/issues/search?componentKeys=sonar-testing-25-january&resolved=false" \
-            -o sonarqube-issues.json || cat sonarqube-issues.json
-
-      - name: Print SonarQube Issues
-        run: cat sonarqube-issues.json
+            -o sonarqube-issues.json
 
       - name: Send SonarQube Report via Email
         uses: dawidd6/action-send-mail@v2
